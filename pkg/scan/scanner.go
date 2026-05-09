@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nullt3r/udpx/pkg/colors"
-	"github.com/nullt3r/udpx/pkg/probes"
+	"github.com/carlospolop/udpx/pkg/colors"
+	"github.com/carlospolop/udpx/pkg/probes"
 )
 
 type Scanner struct {
@@ -33,6 +33,10 @@ type Message struct {
 func (s Scanner) Run() {
 	socketTimeout := time.Duration(s.Arg_st) * time.Millisecond
 	target := s.Target
+	probeSet := s.Probes
+	if len(probeSet) == 0 {
+		probeSet = probes.Probes
+	}
 
 	// Check if input is a domain
 	if net.ParseIP(target) == nil {
@@ -51,44 +55,38 @@ func (s Scanner) Run() {
 			if strings.Contains(ip, ":") {
 				ip = "[" + ip + "]"
 			}
-			for _, probe := range probes.Probes {
+			for _, probe := range probeSet {
 				for _, port := range probe.Port {
 					func() {
-
 						for _, payload := range probe.Payloads {
-							recv_Data := make([]byte, 32)
+							recvData := make([]byte, 32)
 
 							c, err := net.Dial("udp", fmt.Sprint(ip, ":", port))
-
 							if err != nil {
 								log.Printf("%s[!]%s [%s] Error connecting to host '%s': %s", colors.SetColor().Red, colors.SetColor().Reset, probe.Name, ip, err)
 								return
 							}
-
 							defer c.Close()
 
-							Data, err := hex.DecodeString(payload)
-
+							data, err := hex.DecodeString(payload)
 							if err != nil {
 								log.Fatalf("%s[!]%s Error in decoding payload. Problem probe: '%s'", colors.SetColor().Red, colors.SetColor().Reset, probe.Name)
 							}
 
-							_, err = c.Write([]byte(Data))
-
+							_, err = c.Write(data)
 							if err != nil {
 								return
 							}
 
 							c.SetReadDeadline(time.Now().Add(socketTimeout))
 
-							recv_length, err := bufio.NewReader(c).Read(recv_Data)
-
+							recvLength, err := bufio.NewReader(c).Read(recvData)
 							if err != nil {
 								return
 							}
 
-							if recv_length != 0 {
-								s.Channel <- Message{Address: ip, Hostname: domain, Port: port, Service: probe.Name, ResponseData: recv_Data}
+							if recvLength != 0 {
+								s.Channel <- Message{Address: ip, Hostname: domain, Port: port, Service: probe.Name, ResponseData: recvData[:recvLength]}
 								return
 							}
 						}
@@ -96,57 +94,53 @@ func (s Scanner) Run() {
 				}
 			}
 		}
-	} else {
-		// Dial for a single IP
-		ip := target
-		// If IP is IPv6
-		if strings.Contains(ip, ":") {
-			ip = "[" + ip + "]"
-		}
-		for _, probe := range probes.Probes {
-			for _, port := range probe.Port {
-				func() {
-					for _, payload := range probe.Payloads {
-						recv_Data := make([]byte, 32)
+		return
+	}
 
-						now := time.Now()
+	// Dial for a single IP
+	ip := target
+	// If IP is IPv6
+	if strings.Contains(ip, ":") {
+		ip = "[" + ip + "]"
+	}
 
-						c, err := net.Dial("udp", fmt.Sprint(ip, ":", port))
+	for _, probe := range probeSet {
+		for _, port := range probe.Port {
+			func() {
+				for _, payload := range probe.Payloads {
+					recvData := make([]byte, 32)
+					now := time.Now()
 
-						if err != nil {
-							log.Printf("%s[!]%s [%s] Error connecting to host '%s': %s", colors.SetColor().Red, colors.SetColor().Reset, probe.Name, ip, err)
-							return
-						}
-
-						defer c.Close()
-
-						Data, err := hex.DecodeString(payload)
-
-						if err != nil {
-							log.Fatalf("%s[!]%s Error in decoding payload. Problem probe: '%s'", colors.SetColor().Red, colors.SetColor().Reset, probe.Name)
-						}
-
-						_, err = c.Write([]byte(Data))
-
-						if err != nil {
-							return
-						}
-
-						c.SetReadDeadline(time.Now().Add(socketTimeout))
-
-						recv_length, err := bufio.NewReader(c).Read(recv_Data)
-
-						if err != nil {
-							return
-						}
-
-						if recv_length != 0 {
-							s.Channel <- Message{Address: ip, Port: port, Service: probe.Name, ResponseData: recv_Data, Timestamp: now.Unix()}
-							return
-						}
+					c, err := net.Dial("udp", fmt.Sprint(ip, ":", port))
+					if err != nil {
+						log.Printf("%s[!]%s [%s] Error connecting to host '%s': %s", colors.SetColor().Red, colors.SetColor().Reset, probe.Name, ip, err)
+						return
 					}
-				}()
-			}
+					defer c.Close()
+
+					data, err := hex.DecodeString(payload)
+					if err != nil {
+						log.Fatalf("%s[!]%s Error in decoding payload. Problem probe: '%s'", colors.SetColor().Red, colors.SetColor().Reset, probe.Name)
+					}
+
+					_, err = c.Write(data)
+					if err != nil {
+						return
+					}
+
+					c.SetReadDeadline(time.Now().Add(socketTimeout))
+
+					recvLength, err := bufio.NewReader(c).Read(recvData)
+					if err != nil {
+						return
+					}
+
+					if recvLength != 0 {
+						s.Channel <- Message{Address: ip, Port: port, Service: probe.Name, ResponseData: recvData[:recvLength], Timestamp: now.Unix()}
+						return
+					}
+				}
+			}()
 		}
 	}
 }

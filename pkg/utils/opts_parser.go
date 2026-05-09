@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/nullt3r/udpx/pkg/probes"
+	"github.com/carlospolop/udpx/pkg/probes"
 )
 
 type Options struct {

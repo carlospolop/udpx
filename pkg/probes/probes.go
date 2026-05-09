@@ -128,9 +128,24 @@ var Probes = []Probe{
 		Port: []int{5093},
 	},
 	{
+		Name: "daytime",
+		Payloads: []string{"68656C700D0A"},
+		Port: []int{13},
+	},
+	{
 		Name: "sip",
 		Payloads: []string{"4F5054494F4E53"},
 		Port: []int{5060},
+	},
+	{
+		Name: "echo",
+		Payloads: []string{"313233"},
+		Port: []int{7},
+	},
+	{
+		Name: "gtpv1",
+		Payloads: []string{"320100040000000050000000"},
+		Port: []int{2123},
 	},
 	{
 		Name: "snmp",
@@ -138,14 +153,34 @@ var Probes = []Probe{
 		Port: []int{161},
 	},
 	{
+		Name: "l2tp",
+		Payloads: []string{"C8020060000000000000000080080000000000018008000000020100800A0000000300000001800A00000004000000000008000000060500800900000007776655000F000000084D6963726F736F6674800800000009000180080000000A0008"},
+		Port: []int{1701},
+	},
+	{
 		Name: "ssdp",
 		Payloads: []string{"4D2D534541524348202A20485454502F312E310D0A484F53543A3233392E3235352E3235352E3235303A313930300D0A53543A737364703A616C6C0D0A4D414E3A22737364703A646973636F766572220D0A0D0A"},
 		Port: []int{1900},
 	},
 	{
+		Name: "svrloc",
+		Payloads: []string{"0201000036200000000000010002656E00000015736572766963653A736572766963652D6167656E74000764656661756C7400000000"},
+		Port: []int{427},
+	},
+	{
+		Name: "systat",
+		Payloads: []string{"68656C700D0A"},
+		Port: []int{11},
+	},
+	{
 		Name: "tftp",
 		Payloads: []string{"00012F61006E6574617363696900"},
 		Port: []int{69},
+	},
+	{
+		Name: "time",
+		Payloads: []string{"313233"},
+		Port: []int{37},
 	},
 	{
 		Name: "ubiquiti",

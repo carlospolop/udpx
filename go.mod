@@ -1,3 +1,3 @@
-module github.com/nullt3r/udpx
+module github.com/carlospolop/udpx
 
 go 1.17

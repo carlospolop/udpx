@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nullt3r/udpx/pkg/colors"
-	"github.com/nullt3r/udpx/pkg/probes"
-	"github.com/nullt3r/udpx/pkg/scan"
-	"github.com/nullt3r/udpx/pkg/utils"
+	"github.com/carlospolop/udpx/pkg/colors"
+	"github.com/carlospolop/udpx/pkg/probes"
+	"github.com/carlospolop/udpx/pkg/scan"
+	"github.com/carlospolop/udpx/pkg/utils"
 )
 
 func main() {
@@ -36,6 +36,8 @@ func main() {
 	if len(opts.Arg_t) == 0 && len(opts.Arg_tf) == 0 {
 		log.Fatalf("%s[!]%s Error, argument -t or -tf is required\n", colors.SetColor().Red, colors.SetColor().Reset)
 	}
+
+	selectedProbes := probes.Probes
 
 	if len(opts.Arg_tf) != 0 {
 		val, err := utils.ReadFile(opts.Arg_tf)
@@ -62,14 +64,18 @@ func main() {
 	}
 
 	if len(opts.Arg_s) != 0 {
+		filteredProbes := make([]probes.Probe, 0, 1)
 		for n, probe := range probes.Probes {
 			if probe.Name == opts.Arg_s {
-				probes.Probes = []probes.Probe{probe}
+				filteredProbes = append(filteredProbes, probe)
 				break
 			}
 			if n == len(probes.Probes)-1 {
 				log.Fatalf("%s[!]%s Service '%s' is not supported", colors.SetColor().Red, colors.SetColor().Reset, opts.Arg_s)
 			}
+		}
+		if len(filteredProbes) != 0 {
+			selectedProbes = filteredProbes
 		}
 	}
 
@@ -97,7 +103,7 @@ func main() {
 			guard <- struct{}{}
 			go func(t string) {
 				defer wg.Done()
-				scanner := scan.Scanner{Target: t, Probes: probes.Probes, Arg_st: opts.Arg_st, Arg_sp: opts.Arg_sp, Channel: comm}
+				scanner := scan.Scanner{Target: t, Probes: selectedProbes, Arg_st: opts.Arg_st, Arg_sp: opts.Arg_sp, Channel: comm}
 				scanner.Run()
 				<-guard
 			}(t)
@@ -110,6 +116,7 @@ func main() {
 		close(comm)
 	}()
 
+	var outputFile *os.File
 	if len(opts.Arg_o) != 0 {
 		f, err := os.Create(opts.Arg_o)
 
@@ -117,7 +124,8 @@ func main() {
 			log.Fatalf("%s[!]%s Error creating output file: %s", colors.SetColor().Red, colors.SetColor().Reset, err)
 		}
 
-		defer f.Close()
+		outputFile = f
+		defer outputFile.Close()
 
 		log.Printf("[+] Results will be written to: %s", opts.Arg_o)
 	}
@@ -129,27 +137,18 @@ func main() {
 			log.Printf("[+] Received packet: %s%s%s...", colors.SetColor().Yellow, hex.EncodeToString(message.ResponseData), colors.SetColor().Reset)
 		}
 
-		if len(opts.Arg_o) != 0 {
+		if outputFile != nil {
 			json, err := json.Marshal(&message)
 
 			if err != nil {
 				log.Fatalf("%s[!]%s Error: %s", colors.SetColor().Red, colors.SetColor().Reset, err)
 			}
 
-			f, err := os.OpenFile(opts.Arg_o, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-
-			if err != nil {
-				log.Fatalf("%s[!]%s Error opening output file: %s", colors.SetColor().Red, colors.SetColor().Reset, err)
-			}
-
-			if _, err = f.WriteString(string(json) + "\n"); err != nil {
+			if _, err = outputFile.WriteString(string(json) + "\n"); err != nil {
 				log.Fatalf("%s[!]%s Error writing output file: %s", colors.SetColor().Red, colors.SetColor().Reset, err)
 			}
-
 		}
 	}
-
-	<-comm
 
 	log.Print("[+] Scan completed")
 }
