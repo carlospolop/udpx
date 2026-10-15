@@ -105,6 +105,7 @@ The UDPX supports more then 45 services. The most interesting are:
 * openvpn
 * kerberos
 * ldap
+* quic
 
 The complete list of supported services:
 * ard

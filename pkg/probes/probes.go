@@ -1,5 +1,11 @@
 package probes
 
+import "strings"
+
+// An unsupported-version QUIC Initial elicits a Version Negotiation packet
+// without a TLS handshake or SNI. QUIC requires the Initial to be at least 1200 bytes.
+const quicProbePrefix = "c00a0a0a0a080102030405060708081112131415161718"
+
 type Probe struct {
 	Name string
 	Payloads []string
@@ -232,5 +238,9 @@ var Probes = []Probe{
 		Payloads: []string{"0d31323334353637385139393900", "16feff00000000000000000036", "0100002a000000000000002a", "fefd", "0000", "0002002f", "0100"},
 		Port: []int{80,443,853,3391,4433,4740,5349,5684,5868,6514,6636,8232,10161,10162,12346,12446,12546,12646,12746,12846,12946,13046},
 	},
+	{
+		Name: "quic",
+		Payloads: []string{quicProbePrefix + strings.Repeat("00", 1200-len(quicProbePrefix)/2)},
+		Port: []int{443},
+	},
 }
-
