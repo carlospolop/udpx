@@ -27,7 +27,7 @@ func ParseOptions() *Options {
 	flag.IntVar(&opts.Arg_c, "c", 32, "Maximum number of concurrent connections")
 	flag.BoolVar(&opts.Arg_nr, "nr", false, "Do not randomize addresses")
 	flag.IntVar(&opts.Arg_st, "w", 500, "Maximum time to wait for a response (socket timeout) in ms")
-	flag.BoolVar(&opts.Arg_sp, "sp", false, "Show received packets (only first 32 bytes)")
+	flag.BoolVar(&opts.Arg_sp, "sp", false, "Show received packets (up to 4096 bytes)")
 
 	flag.Parse()
 

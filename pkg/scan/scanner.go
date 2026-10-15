@@ -30,6 +30,8 @@ type Message struct {
 	Timestamp    int64  `json:"timestamp"`
 }
 
+const maxResponseBytes = 4096
+
 func (s Scanner) Run() {
 	socketTimeout := time.Duration(s.Arg_st) * time.Millisecond
 	target := s.Target
@@ -59,7 +61,7 @@ func (s Scanner) Run() {
 				for _, port := range probe.Port {
 					func() {
 						for _, payload := range probe.Payloads {
-							recvData := make([]byte, 32)
+							recvData := make([]byte, maxResponseBytes)
 
 							c, err := net.Dial("udp", fmt.Sprint(ip, ":", port))
 							if err != nil {
@@ -108,7 +110,7 @@ func (s Scanner) Run() {
 		for _, port := range probe.Port {
 			func() {
 				for _, payload := range probe.Payloads {
-					recvData := make([]byte, 32)
+					recvData := make([]byte, maxResponseBytes)
 					now := time.Now()
 
 					c, err := net.Dial("udp", fmt.Sprint(ip, ":", port))
